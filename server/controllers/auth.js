@@ -10,11 +10,10 @@ function validateEmail(email) {
   return re.test(String(email).toLowerCase())
 }
 export var checkUserLogin = async (req, res) => {
-  console.log('checkUserLogin')
   try {
     var user = await auth
       .findById(req.userId)
-      .select(['-password', '-phone', '-email', '-keyword', '-friend'])
+      .select(['-password',  '-email', '-keyword', '-friend'])
     if (!user)
       return res.status(400).json({ success: false, message: 'user not found' })
     res.json({ success: true, user })
@@ -26,10 +25,9 @@ export var checkUserLogin = async (req, res) => {
   }
 }
 export var register = async (req, res) => {
-  var { username, password, phone, email } = req.body
+  var { username, password, email } = req.body
   var data = ''
   var hashPassword
-  console.log('register')
   var error = []
   if (!username) {
     error.push('username is require')
@@ -37,27 +35,17 @@ export var register = async (req, res) => {
   if (!password) {
     error.push('password is require')
   }
-  if (!phone) {
-    error.push('phone is require')
-  }
+  
   if (!email) {
     error.push('email is require')
   }
-  if (phone.startsWith('+84')) {
-    phone = phone.replace('+84', '0')
-  } else {
-    phone = '0' + phone
-  }
+  
   if (!validateEmail(email)) {
     return res
       .status(400)
       .json({ success: false, message: 'email is not Validate' })
   }
-  try {
-    phone = parseInt(phone)
-  } catch (error) {
-    console.log(error)
-  }
+  
   if (error.length > 0)
     return res.status(400).json({ success: false, message: error })
   try {
@@ -81,7 +69,6 @@ export var register = async (req, res) => {
     data = {
       username: username,
       password: hashPassword,
-      phone,
       email,
       friend: [],
       keyword,

@@ -5,18 +5,16 @@ import fs from 'fs'
 import { log } from 'console'
 
 export var addPost = async (req, res) => {
-  console.log('add post')
-  var { title, content, likeCount, username } = req.body
+  var { title, content } = req.body
   var attachment
-  var FilePath = ['']
+  var FilePath = []
   if (req.files) {
     req.files.map((item) => {
       FilePath.push(`/uploads/${item.filename}`)
     })
-    FilePath = FilePath.slice(1)
   }
   if (FilePath.length == 0) {
-    FilePath = ['']
+    FilePath = []
   }
   attachment = FilePath
   var error = []
@@ -66,7 +64,6 @@ export var addPost = async (req, res) => {
   }
 }
 export var getPublicPost = async (req, res) => {
-  console.log('getPublicPost')
   try {
     var posts = await postModel
       .find({ private: false })
@@ -84,7 +81,6 @@ export var getPublicPost = async (req, res) => {
   }
 }
 export var getPrivatePost = async (req, res) => {
-  console.log('getPrivatePost')
   try {
     var posts = await postModel
       .find({
@@ -113,7 +109,6 @@ export var getPrivatePost = async (req, res) => {
   }
 }
 export var updatePost = async (req, res) => {
-  console.log('updatePost')
   var { title, content, likeCount } = req.body
   var { id } = req.body
   likeCount = parseInt(likeCount)
@@ -121,13 +116,12 @@ export var updatePost = async (req, res) => {
   if (!title) error.push('title is require')
   if (!id) error.push('id is require')
   var { id } = req.body
-  log(req.body.PhotoUrl)
   if (req.body.PhotoUrl != '' && req.body.PhotoUrl) {
     var attachmentMain = [...req.body.PhotoUrl]
   } else {
     var attachmentMain = []
   }
-  var FilePath = ['']
+  var FilePath = []
   if (req.files) {
     req.files.map((item) => {
       FilePath.push(`/uploads/${item.filename}`)
@@ -135,13 +129,11 @@ export var updatePost = async (req, res) => {
     FilePath = FilePath.slice(1)
   }
   if (FilePath.length == 0) {
-    FilePath = ['']
+    FilePath = []
   }
   attachmentMain = [...attachmentMain, ...FilePath]
   var attachment = attachmentMain
   attachment = attachment.filter((url) => url !== '')
-
-  req.body.content = content || ''
 
   if (error.length > 0) {
     req.files.map((imageFile) => {
@@ -158,9 +150,16 @@ export var updatePost = async (req, res) => {
   }
   var keyword = generateKeywords(title)
   try {
+    let post = await postModel.findOne({ _id: id, users: req.userId })
+    if (!post) {
+      return res.status(401).json({
+        success: false,
+        message: 'post not found or user is not Authorization',
+      })
+    }
+    req.body.content = content || post.content
     let updated
     updated = { ...req.body, keyword, attachment }
-    log(req.body)
     var postUpdateConditions = { _id: id, users: req.userId }
     updated = await postModel.findOneAndUpdate(postUpdateConditions, updated, {
       new: true,
@@ -273,7 +272,28 @@ export var addLike = async (req, res) => {
   try {
     var tempPost = await postModel.findOne({ _id: postId }).lean()
     var likeCount = tempPost.likeCount + 1
-    console.log(likeCount)
+    var updated = await postModel.findOneAndUpdate(
+      { _id: postId },
+      { likeCount },
+      { new: true },
+    )
+    return res.json({ success: true, post: updated })
+  } catch (error) {
+    console.log(error)
+    return res
+      .status(500)
+      .json({ success: false, message: 'Internal Server Error' })
+  }
+}
+export var RemoveLike = async (req, res) => {
+  var { postId } = req.body
+  if (!postId)
+    return res
+      .status(400)
+      .json({ success: false, message: 'postId is require' })
+  try {
+    var tempPost = await postModel.findOne({ _id: postId }).lean()
+    var likeCount = tempPost.likeCount - 1
     var updated = await postModel.findOneAndUpdate(
       { _id: postId },
       { likeCount },

@@ -21,4 +21,5 @@ router.post('/delete', verifyToken, deletePost)
 router.get('/getmyallpost', verifyToken, getMyAllPost)
 router.get('/search', searchPost)
 router.post('/addlike', verifyToken, addLike)
+router
 export default router

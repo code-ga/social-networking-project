@@ -15,9 +15,4 @@ var connectDB = async () => {
         console.log(error)
     }
 }
-/**
- * Anonymous
- * 123456789
- * abc@example.com
- */
 export default connectDB
